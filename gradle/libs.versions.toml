@@ -7,6 +7,7 @@ hilt = "2.55"
 ksp = "2.0.21-1.0.28" # Also change with Kotlin version
 material = "1.12.0"
 activity = "1.10.0"
+lifecycle = "2.8.7"
 constraintlayout = "2.2.0"
 playServicesTime = "16.0.1"
 playServicesCoroutines = "1.10.1"
@@ -21,6 +22,7 @@ hilt = { group = "com.google.dagger", name = "hilt-android", version.ref = "hilt
 hilt-compiler = { group = "com.google.dagger", name = "hilt-android-compiler", version.ref = "hilt" }
 google-play-time = { group = "com.google.android.gms", name = "play-services-time", version.ref = "playServicesTime" }
 play-services-coroutines = { group = "org.jetbrains.kotlinx", name = "kotlinx-coroutines-play-services", version.ref = "playServicesCoroutines"}
+lifecycle-viewmodel-ktx = { group = "androidx.lifecycle", name = "lifecycle-viewmodel-ktx", version.ref = "lifecycle" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }
