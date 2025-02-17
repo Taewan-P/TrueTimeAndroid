@@ -22,8 +22,8 @@ class MainViewModel : ViewModel() {
     private val _latestEstimateError = MutableStateFlow(0L)
     val latestEstimateError = _latestEstimateError.asStateFlow()
 
-    private val _previousTick = MutableStateFlow<Ticks?>(null)
-    val previousTick = _previousTick.asStateFlow()
+    private val _lastUpdatedTime = MutableStateFlow<Long?>(null)
+    val lastUpdatedTime = _lastUpdatedTime.asStateFlow()
 
     fun setTimeClientReady() = _clientReady.update { true }
 
@@ -31,5 +31,5 @@ class MainViewModel : ViewModel() {
 
     fun setLatestEstimateError(error: Long) = _latestEstimateError.update { error }
 
-    fun setPreviousTick(tick: Ticks) = _previousTick.update { tick }
+    fun setLastUpdatedTime(time: Long) = _lastUpdatedTime.update { time }
 }

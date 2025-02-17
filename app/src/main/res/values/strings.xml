@@ -1,4 +1,8 @@
 <resources>
     <string name="app_name">TrueTime</string>
     <string name="refresh">Refresh</string>
+    <string name="last_updated_time">Last updated: %1s</string>
+    <string name="unknown">Unknown</string>
+    <string name="time_offset">Offset: %1s ms</string>
+    <string name="estimated_error">Estimated Error: %1s ms</string>
 </resources>
