@@ -45,7 +45,11 @@ class LiveTimeForegroundService : Service() {
         startUpdates()
     }
 
-    override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int = START_STICKY
+    override fun onStartCommand(
+        intent: Intent?,
+        flags: Int,
+        startId: Int,
+    ): Int = START_STICKY
 
     override fun onDestroy() {
         updateJob?.cancel()
