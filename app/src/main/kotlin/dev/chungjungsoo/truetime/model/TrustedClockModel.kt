@@ -23,7 +23,7 @@ class TrustedClockModel
         fun refreshSnapshot(nowMillis: Long = System.currentTimeMillis()): ClockSnapshot? {
             val currentInstant = trustedTimeClient?.latestTimeSignal?.computeCurrentInstant() ?: return null
             val trustedMillis = currentInstant.instantMillis
-            val error = currentInstant.estimatedErrorMillis
+            val error = currentInstant.estimatedErrorMillis ?: 0L
             val trustedSample = TrustedSample(trustedEpochMillis = trustedMillis, estimatedErrorMillis = error)
             val verification = verifyAgainstNtp(trustedSample)
             val correctedMillis = verification.correctedEpochMillis
