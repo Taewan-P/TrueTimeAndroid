@@ -35,7 +35,7 @@ class MainController
         )
 
         private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
-        private val liveTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
+        private val liveTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
         private var latestSnapshot: ClockSnapshot? = null
         private var tickerJob: Job? = null
 

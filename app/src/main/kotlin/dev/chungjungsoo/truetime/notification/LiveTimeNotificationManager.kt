@@ -39,10 +39,10 @@ class LiveTimeNotificationManager
                         .setStyle(
                             Notification
                                 .ProgressStyle()
-                                .setStyledByProgress(false)
                                 .setProgressSegments(listOf(Notification.ProgressStyle.Segment(60)))
                                 .setProgress(secondInMinute),
-                        ).build()
+                        ).setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
+                        .build()
                 } else {
                     NotificationCompat
                         .Builder(context, CHANNEL_ID)
@@ -53,7 +53,7 @@ class LiveTimeNotificationManager
                         .setCategory(NotificationCompat.CATEGORY_PROGRESS)
                         .setOngoing(true)
                         .setOnlyAlertOnce(true)
-                        .setProgress(60, secondInMinute, false)
+                        .setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
                         .build()
                 }
             manager.notify(NOTIFICATION_ID, notification)
