@@ -31,7 +31,11 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
                 val state = controller.uiState.value
-                liveTimeNotificationManager.showLiveTimeNotification(state.currentTime, state.corrected)
+                liveTimeNotificationManager.showLiveTimeNotification(
+                    timeText = state.currentTime,
+                    corrected = state.corrected,
+                    secondInMinute = state.secondInMinute,
+                )
             }
         }
 
@@ -49,10 +53,11 @@ class MainActivity : ComponentActivity() {
                         onRefresh = controller::refresh,
                     )
 
-                    LaunchedEffect(state.currentTime, state.corrected) {
+                    LaunchedEffect(state.currentTime, state.corrected, state.secondInMinute) {
                         liveTimeNotificationManager.showLiveTimeNotification(
                             timeText = state.currentTime,
                             corrected = state.corrected,
+                            secondInMinute = state.secondInMinute,
                         )
                     }
                 }

@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Button
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,8 +26,18 @@ fun TimeScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
     ) {
-        Text(text = state.currentTime, style = MaterialTheme.typography.headlineMedium, textAlign = TextAlign.Center)
-        Text(text = "Last updated: ${state.lastUpdated}")
+        Text(
+            text = state.currentTime,
+            style = MaterialTheme.typography.displaySmall,
+            textAlign = TextAlign.Center,
+        )
+        Text(text = "Second: ${state.secondInMinute}")
+        LinearProgressIndicator(
+            progress = { state.minuteProgress },
+            modifier = Modifier.padding(top = 8.dp),
+        )
+        Text(text = "Minute progress: ${(state.minuteProgress * 100).toInt()}%")
+        Text(text = "Last updated: ${state.lastUpdated}", modifier = Modifier.padding(top = 16.dp))
         Text(text = "Offset: ${state.offsetMillis} ms")
         Text(text = "Estimated Error: ${state.estimatedErrorMillis} ms")
         Text(text = "NTP drift: ${state.driftMillis} ms")

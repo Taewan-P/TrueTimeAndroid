@@ -23,16 +23,19 @@ class MainController
         private val trustedClockModel: TrustedClockModel,
     ) : ViewModel() {
         data class UiState(
-            val currentTime: String = "--",
+            val currentTime: String = "--:--:--",
             val lastUpdated: String = "Unknown",
             val offsetMillis: Long = 0L,
             val estimatedErrorMillis: Long = 0L,
             val driftMillis: Long = 0L,
             val corrected: Boolean = false,
             val clientReady: Boolean = false,
+            val secondInMinute: Int = 0,
+            val minuteProgress: Float = 0f,
         )
 
-        private val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+        private val dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSS")
+        private val liveTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss")
         private var latestSnapshot: ClockSnapshot? = null
         private var tickerJob: Job? = null
 
@@ -55,7 +58,7 @@ class MainController
             latestSnapshot = snapshot
             _uiState.update {
                 it.copy(
-                    lastUpdated = formatTime(snapshot.epochMillis),
+                    lastUpdated = formatDateTime(snapshot.epochMillis),
                     offsetMillis = snapshot.offsetMillis,
                     estimatedErrorMillis = snapshot.estimatedErrorMillis,
                     driftMillis = snapshot.driftMillis,
@@ -71,17 +74,28 @@ class MainController
                     while (true) {
                         val base = latestSnapshot
                         if (base != null) {
-                            val adjusted =
+                            val adjustedMillis =
                                 System.currentTimeMillis() +
                                     base.offsetMillis -
                                     base.estimatedErrorMillis
-                            _uiState.update { it.copy(currentTime = formatTime(adjusted)) }
+                            val secondInMinute = ((adjustedMillis / 1000L) % 60L).toInt()
+                            val minuteProgress = (adjustedMillis % 60_000L).toFloat() / 60_000f
+                            _uiState.update {
+                                it.copy(
+                                    currentTime = formatLiveTime(adjustedMillis),
+                                    secondInMinute = secondInMinute,
+                                    minuteProgress = minuteProgress,
+                                )
+                            }
                         }
                         delay(100L)
                     }
                 }
         }
 
-        private fun formatTime(epochMillis: Long): String =
-            formatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+        private fun formatDateTime(epochMillis: Long): String =
+            dateTimeFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+
+        private fun formatLiveTime(epochMillis: Long): String =
+            liveTimeFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
     }
