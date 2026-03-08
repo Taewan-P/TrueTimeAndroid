@@ -14,6 +14,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import dev.chungjungsoo.truetime.controller.MainController
 
+@Suppress("FunctionName")
 @Composable
 fun TimeScreen(
     state: MainController.UiState,
