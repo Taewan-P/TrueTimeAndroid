@@ -2,6 +2,8 @@ package dev.chungjungsoo.truetime.notification
 
 import android.app.Service
 import android.content.Intent
+import android.content.pm.ServiceInfo
+import android.os.Build
 import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chungjungsoo.truetime.model.TrustedClockModel
@@ -34,14 +36,24 @@ class LiveTimeForegroundService : Service() {
 
     override fun onCreate() {
         super.onCreate()
-        startForeground(
-            LiveTimeNotificationManager.NOTIFICATION_ID,
+        val notification =
             liveTimeNotificationManager.createLiveTimeNotification(
                 timeText = "--:--:--.---",
                 corrected = false,
                 secondInMinute = 0,
-            ),
-        )
+            )
+        if (Build.VERSION.SDK_INT >= 29) {
+            startForeground(
+                LiveTimeNotificationManager.NOTIFICATION_ID,
+                notification,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+            )
+        } else {
+            startForeground(
+                LiveTimeNotificationManager.NOTIFICATION_ID,
+                notification,
+            )
+        }
         startUpdates()
     }
 
@@ -83,7 +95,7 @@ class LiveTimeForegroundService : Service() {
             }
     }
 
-    private fun refreshSnapshot() {
+    private suspend fun refreshSnapshot() {
         val snapshot = trustedClockModel.refreshSnapshot() ?: return
         offsetMillis = snapshot.offsetMillis
         estimatedErrorMillis = snapshot.estimatedErrorMillis

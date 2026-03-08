@@ -20,7 +20,7 @@ class TrustedClockModel
             }
         }
 
-        fun refreshSnapshot(nowMillis: Long = System.currentTimeMillis()): ClockSnapshot? {
+        suspend fun refreshSnapshot(nowMillis: Long = System.currentTimeMillis()): ClockSnapshot? {
             val currentInstant = trustedTimeClient?.latestTimeSignal?.computeCurrentInstant() ?: return null
             val trustedMillis = currentInstant.instantMillis
             val error = currentInstant.estimatedErrorMillis ?: 0L
@@ -37,7 +37,7 @@ class TrustedClockModel
             )
         }
 
-        private fun verifyAgainstNtp(
+        private suspend fun verifyAgainstNtp(
             sample: TrustedSample,
             maxAcceptedDriftMillis: Long = 50L,
         ): VerificationResult {

@@ -47,13 +47,17 @@ class MainController
                 runCatching { trustedClockModel.initialize() }
                     .onSuccess {
                         _uiState.update { it.copy(clientReady = true) }
-                        refresh()
+                        updateSnapshot()
                         startTicker()
                     }
             }
         }
 
         fun refresh() {
+            viewModelScope.launch { updateSnapshot() }
+        }
+
+        private suspend fun updateSnapshot() {
             val snapshot = trustedClockModel.refreshSnapshot() ?: return
             latestSnapshot = snapshot
             _uiState.update {
