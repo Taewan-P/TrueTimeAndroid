@@ -24,39 +24,52 @@ class LiveTimeNotificationManager
             corrected: Boolean,
             secondInMinute: Int,
         ) {
+            manager.notify(
+                NOTIFICATION_ID,
+                createLiveTimeNotification(
+                    timeText = timeText,
+                    corrected = corrected,
+                    secondInMinute = secondInMinute,
+                ),
+            )
+        }
+
+        fun createLiveTimeNotification(
+            timeText: String,
+            corrected: Boolean,
+            secondInMinute: Int,
+        ): Notification {
             ensureChannel()
             val suffix = if (corrected) " (NTP corrected)" else ""
-            val notification =
-                if (Build.VERSION.SDK_INT >= 36) {
-                    Notification
-                        .Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                        .setContentTitle("TrueTime Live")
-                        .setContentText("$timeText$suffix")
-                        .setSubText("Live Update")
-                        .setOngoing(true)
-                        .setOnlyAlertOnce(true)
-                        .setStyle(
-                            Notification
-                                .ProgressStyle()
-                                .setProgressSegments(listOf(Notification.ProgressStyle.Segment(60)))
-                                .setProgress(secondInMinute),
-                        ).setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
-                        .build()
-                } else {
-                    NotificationCompat
-                        .Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                        .setContentTitle("TrueTime Live")
-                        .setContentText("$timeText$suffix")
-                        .setSubText("Live Update")
-                        .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-                        .setOngoing(true)
-                        .setOnlyAlertOnce(true)
-                        .setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
-                        .build()
-                }
-            manager.notify(NOTIFICATION_ID, notification)
+            return if (Build.VERSION.SDK_INT >= 36) {
+                Notification
+                    .Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("TrueTime Live")
+                    .setContentText("$timeText$suffix")
+                    .setSubText("Live Update")
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .setStyle(
+                        Notification
+                            .ProgressStyle()
+                            .setProgressSegments(listOf(Notification.ProgressStyle.Segment(60)))
+                            .setProgress(secondInMinute),
+                    ).setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
+                    .build()
+            } else {
+                NotificationCompat
+                    .Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle("TrueTime Live")
+                    .setContentText("$timeText$suffix")
+                    .setSubText("Live Update")
+                    .setCategory(NotificationCompat.CATEGORY_PROGRESS)
+                    .setOngoing(true)
+                    .setOnlyAlertOnce(true)
+                    .setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
+                    .build()
+            }
         }
 
         private fun ensureChannel() {
@@ -67,7 +80,7 @@ class LiveTimeNotificationManager
         }
 
         companion object {
-            private const val CHANNEL_ID = "truetime_live_channel"
-            private const val NOTIFICATION_ID = 10_001
+            const val CHANNEL_ID = "truetime_live_channel"
+            const val NOTIFICATION_ID = 10_001
         }
     }

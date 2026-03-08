@@ -1,6 +1,7 @@
 package dev.chungjungsoo.truetime
 
 import android.Manifest
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
@@ -10,32 +11,23 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chungjungsoo.truetime.controller.MainController
-import dev.chungjungsoo.truetime.notification.LiveTimeNotificationManager
+import dev.chungjungsoo.truetime.notification.LiveTimeForegroundService
 import dev.chungjungsoo.truetime.ui.TimeScreen
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
-    @Inject
-    lateinit var liveTimeNotificationManager: LiveTimeNotificationManager
-
     private val controller: MainController by viewModels()
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
-                val state = controller.uiState.value
-                liveTimeNotificationManager.showLiveTimeNotification(
-                    timeText = state.currentTime,
-                    corrected = state.corrected,
-                    secondInMinute = state.secondInMinute,
-                )
+                startLiveTimeService()
             }
         }
 
@@ -52,28 +44,33 @@ class MainActivity : ComponentActivity() {
                         state = state,
                         onRefresh = controller::refresh,
                     )
-
-                    LaunchedEffect(state.currentTime, state.corrected, state.secondInMinute) {
-                        liveTimeNotificationManager.showLiveTimeNotification(
-                            timeText = state.currentTime,
-                            corrected = state.corrected,
-                            secondInMinute = state.secondInMinute,
-                        )
-                    }
                 }
             }
         }
     }
 
     private fun requestNotificationPermissionIfNeeded() {
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) return
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            startLiveTimeService()
+            return
+        }
+
         val granted =
             ContextCompat.checkSelfPermission(
                 this,
                 Manifest.permission.POST_NOTIFICATIONS,
             ) == PackageManager.PERMISSION_GRANTED
-        if (!granted) {
+        if (granted) {
+            startLiveTimeService()
+        } else {
             notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
         }
+    }
+
+    private fun startLiveTimeService() {
+        startForegroundService(
+            this,
+            Intent(this, LiveTimeForegroundService::class.java),
+        )
     }
 }
