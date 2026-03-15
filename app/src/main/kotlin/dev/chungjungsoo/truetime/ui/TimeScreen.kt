@@ -10,10 +10,12 @@ import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import dev.chungjungsoo.truetime.R
 import dev.chungjungsoo.truetime.controller.MainController
 
 @Suppress("FunctionName")
@@ -22,6 +24,7 @@ fun TimeScreen(
     state: MainController.UiState,
     inPipMode: Boolean,
     onRefresh: () -> Unit,
+    onActivateLiveNotification: () -> Unit,
     onEnterPip: () -> Unit,
 ) {
     Column(
@@ -53,6 +56,9 @@ fun TimeScreen(
         Text(text = "Estimated Error: ${state.estimatedErrorMillis} ms")
         Text(text = "NTP drift: ${state.driftMillis} ms")
         Text(text = if (state.corrected) "Source: corrected with NTP" else "Source: TrustedTime")
+        Button(onClick = onActivateLiveNotification, modifier = Modifier.padding(top = 16.dp)) {
+            Text(stringResource(R.string.activate_live_notification))
+        }
         Button(onClick = onEnterPip, modifier = Modifier.padding(top = 16.dp)) {
             Text("Enter PiP")
         }

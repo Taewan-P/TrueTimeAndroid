@@ -5,6 +5,7 @@
     <string name="unknown">Unknown</string>
     <string name="time_offset">Offset: %1s ms</string>
     <string name="estimated_error">Estimated Error: %1s ms</string>
+    <string name="activate_live_notification">Activate Live Notification</string>
     <string name="live_time_notification_title">TrueTime Live</string>
     <string name="live_time_notification_content">Clock pinned to the status chip</string>
     <string name="live_time_notification_close">Close</string>

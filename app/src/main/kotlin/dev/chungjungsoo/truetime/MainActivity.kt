@@ -70,6 +70,7 @@ class MainActivity : ComponentActivity() {
                         state = state,
                         inPipMode = inPipMode,
                         onRefresh = controller::refresh,
+                        onActivateLiveNotification = ::requestNotificationPermissionIfNeeded,
                         onEnterPip = ::enterClockPipMode,
                     )
                 }
