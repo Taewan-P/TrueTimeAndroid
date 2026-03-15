@@ -3,10 +3,13 @@ package dev.chungjungsoo.truetime.notification
 import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
+import android.app.PendingIntent
 import android.content.Context
+import android.content.Intent
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
+import dev.chungjungsoo.truetime.MainActivity
 import dev.chungjungsoo.truetime.R
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -20,63 +23,103 @@ class LiveTimeNotificationManager
         private val manager = context.getSystemService(NotificationManager::class.java)
 
         fun showLiveTimeNotification(
-            timeText: String,
             corrected: Boolean,
-            secondInMinute: Int,
+            chipText: String,
         ) {
             manager.notify(
                 NOTIFICATION_ID,
                 createLiveTimeNotification(
-                    timeText = timeText,
                     corrected = corrected,
-                    secondInMinute = secondInMinute,
+                    chipText = chipText,
                 ),
             )
         }
 
         fun createLiveTimeNotification(
-            timeText: String,
             corrected: Boolean,
-            secondInMinute: Int,
+            chipText: String,
         ): Notification {
             ensureChannel()
-            val suffix = if (corrected) " (NTP corrected)" else ""
-            return if (Build.VERSION.SDK_INT >= 36) {
-                Notification
-                    .Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setContentTitle("TrueTime Live")
-                    .setContentText("$timeText$suffix")
-                    .setSubText("Live Update")
-                    .setOngoing(true)
-                    .setOnlyAlertOnce(true)
-                    .setStyle(
-                        Notification
-                            .ProgressStyle()
-                            .setProgressSegments(listOf(Notification.ProgressStyle.Segment(60)))
-                            .setProgress(secondInMinute),
-                    ).setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
-                    .build()
-            } else {
-                NotificationCompat
-                    .Builder(context, CHANNEL_ID)
-                    .setSmallIcon(R.mipmap.ic_launcher)
-                    .setContentTitle("TrueTime Live")
-                    .setContentText("$timeText$suffix")
-                    .setSubText("Live Update")
-                    .setCategory(NotificationCompat.CATEGORY_PROGRESS)
-                    .setOngoing(true)
-                    .setOnlyAlertOnce(true)
-                    .setProgress(60, (secondInMinute.coerceIn(0, 59) + 1), false)
-                    .build()
+            val contentIntent =
+                PendingIntent.getActivity(
+                    context,
+                    0,
+                    Intent(context, MainActivity::class.java).apply {
+                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                    },
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            val deleteIntent =
+                PendingIntent.getBroadcast(
+                    context,
+                    0,
+                    Intent(context, LiveTimeNotificationDismissReceiver::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
+            val statusTextResId =
+                if (corrected) {
+                    R.string.live_time_notification_corrected
+                } else {
+                    R.string.live_time_notification_uncorrected
+                }
+
+            if (Build.VERSION.SDK_INT >= 36) {
+                val builder =
+                    Notification
+                        .Builder(context, CHANNEL_ID)
+                        .setSmallIcon(R.mipmap.ic_launcher)
+                        .setContentTitle(context.getString(R.string.live_time_notification_title))
+                        .setContentText(context.getString(R.string.live_time_notification_content))
+                        .setSubText(context.getString(statusTextResId))
+                        .setContentIntent(contentIntent)
+                        .setDeleteIntent(deleteIntent)
+                        .setCategory(Notification.CATEGORY_STATUS)
+                        .setVisibility(Notification.VISIBILITY_PUBLIC)
+                        .setOnlyAlertOnce(true)
+                        .setOngoing(true)
+                        .setShowWhen(false)
+                        .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+                        .setShortCriticalText(chipText)
+
+                requestPromotedOngoing(builder)
+                return builder.build()
             }
+
+            return NotificationCompat
+                .Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(context.getString(R.string.live_time_notification_title))
+                .setContentText(context.getString(R.string.live_time_notification_content))
+                .setSubText(context.getString(statusTextResId))
+                .setContentIntent(contentIntent)
+                .setDeleteIntent(deleteIntent)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setOnlyAlertOnce(true)
+                .setOngoing(true)
+                .setShowWhen(false)
+                .setSilent(true)
+                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+                .build()
         }
 
         private fun ensureChannel() {
             if (manager.getNotificationChannel(CHANNEL_ID) != null) return
             manager.createNotificationChannel(
-                NotificationChannel(CHANNEL_ID, "TrueTime Live Updates", NotificationManager.IMPORTANCE_LOW),
+                NotificationChannel(
+                    CHANNEL_ID,
+                    context.getString(R.string.live_time_notification_channel_name),
+                    NotificationManager.IMPORTANCE_LOW,
+                ),
             )
+        }
+
+        private fun requestPromotedOngoing(builder: Notification.Builder) {
+            runCatching {
+                builder::class.java
+                    .getMethod("setRequestPromotedOngoing", Boolean::class.javaPrimitiveType)
+                    .invoke(builder, true)
+            }
         }
 
         companion object {

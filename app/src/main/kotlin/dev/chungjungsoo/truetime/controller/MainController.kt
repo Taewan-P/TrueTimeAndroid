@@ -7,6 +7,7 @@ import dev.chungjungsoo.truetime.model.ClockSnapshot
 import dev.chungjungsoo.truetime.model.TrustedClockModel
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
@@ -38,19 +39,54 @@ class MainController
         private val liveTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
         private var latestSnapshot: ClockSnapshot? = null
         private var tickerJob: Job? = null
+        private var initialized = false
 
         private val _uiState = MutableStateFlow(UiState())
         val uiState = _uiState.asStateFlow()
 
         fun initialize() {
+            if (initialized) return
+            initialized = true
             viewModelScope.launch {
                 runCatching { trustedClockModel.initialize() }
                     .onSuccess {
                         _uiState.update { it.copy(clientReady = true) }
                         updateSnapshot()
-                        startTicker()
                     }
             }
+        }
+
+        fun startTicker() {
+            if (tickerJob?.isActive == true) return
+            tickerJob =
+                viewModelScope.launch {
+                    if (latestSnapshot == null) {
+                        updateSnapshot()
+                    }
+                    while (isActive) {
+                        val base = latestSnapshot
+                        if (base != null) {
+                            val adjustedMillis =
+                                System.currentTimeMillis() +
+                                    base.offsetMillis
+                            val secondInMinute = ((adjustedMillis / 1000L) % 60L).toInt()
+                            val minuteProgress = (adjustedMillis % 60_000L).toFloat() / 60_000f
+                            _uiState.update {
+                                it.copy(
+                                    currentTime = formatLiveTime(adjustedMillis),
+                                    secondInMinute = secondInMinute,
+                                    minuteProgress = minuteProgress,
+                                )
+                            }
+                        }
+                        delay(TICKER_INTERVAL_MS)
+                    }
+                }
+        }
+
+        fun stopTicker() {
+            tickerJob?.cancel()
+            tickerJob = null
         }
 
         fun refresh() {
@@ -71,35 +107,18 @@ class MainController
             }
         }
 
-        private fun startTicker() {
-            tickerJob?.cancel()
-            tickerJob =
-                viewModelScope.launch {
-                    while (true) {
-                        val base = latestSnapshot
-                        if (base != null) {
-                            val adjustedMillis =
-                                System.currentTimeMillis() +
-                                    base.offsetMillis -
-                                    base.estimatedErrorMillis
-                            val secondInMinute = ((adjustedMillis / 1000L) % 60L).toInt()
-                            val minuteProgress = (adjustedMillis % 60_000L).toFloat() / 60_000f
-                            _uiState.update {
-                                it.copy(
-                                    currentTime = formatLiveTime(adjustedMillis),
-                                    secondInMinute = secondInMinute,
-                                    minuteProgress = minuteProgress,
-                                )
-                            }
-                        }
-                        delay(100L)
-                    }
-                }
-        }
-
         private fun formatDateTime(epochMillis: Long): String =
             dateTimeFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
         private fun formatLiveTime(epochMillis: Long): String =
             liveTimeFormatter.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+
+        override fun onCleared() {
+            stopTicker()
+            super.onCleared()
+        }
+
+        companion object {
+            private const val TICKER_INTERVAL_MS = 33L
+        }
     }

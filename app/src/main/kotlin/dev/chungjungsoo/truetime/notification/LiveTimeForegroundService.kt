@@ -31,16 +31,14 @@ class LiveTimeForegroundService : Service() {
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
     private var updateJob: Job? = null
     private var offsetMillis: Long = 0L
-    private var estimatedErrorMillis: Long = 0L
     private var corrected: Boolean = false
 
     override fun onCreate() {
         super.onCreate()
         val notification =
             liveTimeNotificationManager.createLiveTimeNotification(
-                timeText = "--:--:--.---",
                 corrected = false,
-                secondInMinute = 0,
+                chipText = "--:--",
             )
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(
@@ -79,18 +77,17 @@ class LiveTimeForegroundService : Service() {
                 refreshSnapshot()
 
                 while (isActive) {
-                    val adjustedMillis = System.currentTimeMillis() + offsetMillis - estimatedErrorMillis
-                    val secondInMinute = ((adjustedMillis / 1000L) % 60L).toInt()
+                    val adjustedMillis = System.currentTimeMillis() + offsetMillis
                     liveTimeNotificationManager.showLiveTimeNotification(
-                        timeText = formatLiveTime(adjustedMillis),
                         corrected = corrected,
-                        secondInMinute = secondInMinute,
+                        chipText = formatStatusChip(adjustedMillis),
                     )
 
-                    if (secondInMinute == 0) {
+                    val delayMillis = MILLIS_PER_SECOND - (adjustedMillis % MILLIS_PER_SECOND)
+                    if (delayMillis <= SECOND_REFRESH_WINDOW_MS) {
                         refreshSnapshot()
                     }
-                    delay(100L)
+                    delay(delayMillis.coerceAtLeast(MIN_NOTIFICATION_UPDATE_INTERVAL_MS))
                 }
             }
     }
@@ -98,14 +95,16 @@ class LiveTimeForegroundService : Service() {
     private suspend fun refreshSnapshot() {
         val snapshot = trustedClockModel.refreshSnapshot() ?: return
         offsetMillis = snapshot.offsetMillis
-        estimatedErrorMillis = snapshot.estimatedErrorMillis
         corrected = snapshot.corrected
     }
 
-    private fun formatLiveTime(epochMillis: Long): String =
-        LIVE_TIME_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+    private fun formatStatusChip(epochMillis: Long): String =
+        STATUS_CHIP_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
     companion object {
-        private val LIVE_TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
+        private val STATUS_CHIP_FORMATTER = DateTimeFormatter.ofPattern("mm:ss")
+        private const val MILLIS_PER_SECOND = 1_000L
+        private const val SECOND_REFRESH_WINDOW_MS = 50L
+        private const val MIN_NOTIFICATION_UPDATE_INTERVAL_MS = 50L
     }
 }

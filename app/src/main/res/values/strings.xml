@@ -5,4 +5,10 @@
     <string name="unknown">Unknown</string>
     <string name="time_offset">Offset: %1s ms</string>
     <string name="estimated_error">Estimated Error: %1s ms</string>
+    <string name="live_time_notification_title">TrueTime Live</string>
+    <string name="live_time_notification_content">Clock pinned to the status chip</string>
+    <string name="live_time_notification_corrected">NTP corrected</string>
+    <string name="live_time_notification_uncorrected">System clock</string>
+    <string name="live_time_notification_channel_name">TrueTime Live Updates</string>
+    <string name="pip_refresh">Refresh</string>
 </resources>
