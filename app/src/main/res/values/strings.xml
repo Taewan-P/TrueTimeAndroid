@@ -17,6 +17,7 @@
     <string name="offset_label">Offset</string>
     <string name="estimated_error_label">Estimated error</string>
     <string name="drift_label">NTP drift</string>
+    <string name="ntp_server_label">NTP server</string>
     <string name="status_corrected">NTP corrected</string>
     <string name="status_trusted_time">TrustedTime</string>
     <string name="source_corrected">Corrected with NTP</string>

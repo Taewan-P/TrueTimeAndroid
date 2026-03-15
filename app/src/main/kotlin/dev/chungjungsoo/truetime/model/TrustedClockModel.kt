@@ -25,6 +25,7 @@ constructor(
         val trustedMillis = currentInstant.instantMillis
         val error = currentInstant.estimatedErrorMillis ?: 0L
         val trustedSample = TrustedSample(trustedEpochMillis = trustedMillis, estimatedErrorMillis = error)
+        val ntpServer = NtpVerifier.DEFAULT_HOST
         val verification = verifyAgainstNtp(trustedSample)
         val correctedMillis = verification.correctedEpochMillis
 
@@ -33,7 +34,8 @@ constructor(
             offsetMillis = correctedMillis - nowMillis,
             estimatedErrorMillis = error,
             driftMillis = verification.driftMillis,
-            corrected = verification.usedManualNtpCorrection
+            corrected = verification.usedManualNtpCorrection,
+            ntpServer = ntpServer
         )
     }
 

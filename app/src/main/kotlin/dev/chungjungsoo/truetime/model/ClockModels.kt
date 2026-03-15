@@ -16,5 +16,6 @@ data class ClockSnapshot(
     val offsetMillis: Long,
     val estimatedErrorMillis: Long,
     val driftMillis: Long,
-    val corrected: Boolean
+    val corrected: Boolean,
+    val ntpServer: String
 )

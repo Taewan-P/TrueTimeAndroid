@@ -291,6 +291,11 @@ private fun StatusCard(state: MainController.UiState) {
                     value = stringResource(R.string.millis_value, state.driftMillis),
                     modifier = Modifier.fillMaxWidth()
                 )
+                MetricTile(
+                    label = stringResource(R.string.ntp_server_label),
+                    value = state.ntpServer,
+                    modifier = Modifier.fillMaxWidth()
+                )
             }
         }
     }

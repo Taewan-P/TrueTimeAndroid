@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dev.chungjungsoo.truetime.model.ClockSnapshot
+import dev.chungjungsoo.truetime.model.NtpVerifier
 import dev.chungjungsoo.truetime.model.TrustedClockModel
 import java.time.Instant
 import java.time.ZoneId
@@ -29,6 +30,7 @@ constructor(
         val offsetMillis: Long = 0L,
         val estimatedErrorMillis: Long = 0L,
         val driftMillis: Long = 0L,
+        val ntpServer: String = NtpVerifier.DEFAULT_HOST,
         val corrected: Boolean = false,
         val clientReady: Boolean = false,
         val secondInMinute: Int = 0,
@@ -102,6 +104,7 @@ constructor(
                 offsetMillis = snapshot.offsetMillis,
                 estimatedErrorMillis = snapshot.estimatedErrorMillis,
                 driftMillis = snapshot.driftMillis,
+                ntpServer = snapshot.ntpServer,
                 corrected = snapshot.corrected
             )
         }

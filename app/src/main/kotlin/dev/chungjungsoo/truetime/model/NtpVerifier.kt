@@ -11,7 +11,7 @@ class NtpVerifier
 @Inject
 constructor() {
     suspend fun queryNtpTimeMillis(
-        host: String = "time.google.com",
+        host: String = DEFAULT_HOST,
         timeoutMs: Int = 2_000
     ): Long? = withContext(Dispatchers.IO) {
         runCatching {
@@ -105,6 +105,7 @@ constructor() {
     }
 
     companion object {
+        const val DEFAULT_HOST = "time.google.com"
         private const val INDEX_LEAP_VERSION_MODE = 0
         private const val INDEX_STRATUM = 1
         private const val INDEX_RECEIVE_TIME = 32
