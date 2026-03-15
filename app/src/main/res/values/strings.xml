@@ -7,6 +7,7 @@
     <string name="estimated_error">Estimated Error: %1s ms</string>
     <string name="live_time_notification_title">TrueTime Live</string>
     <string name="live_time_notification_content">Clock pinned to the status chip</string>
+    <string name="live_time_notification_close">Close</string>
     <string name="live_time_notification_corrected">NTP corrected</string>
     <string name="live_time_notification_uncorrected">System clock</string>
     <string name="live_time_notification_channel_name">TrueTime Live Updates</string>

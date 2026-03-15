@@ -49,8 +49,7 @@ class NtpVerifier
             receiveTimeMillis: Long,
             transmitTimeMillis: Long,
             responseTimeMillis: Long,
-        ): Long =
-            ((receiveTimeMillis - requestTimeMillis) + (transmitTimeMillis - responseTimeMillis)) / 2L
+        ): Long = ((receiveTimeMillis - requestTimeMillis) + (transmitTimeMillis - responseTimeMillis)) / 2L
 
         internal fun readTimestamp(
             buffer: ByteArray,

@@ -166,8 +166,7 @@ class MainActivity : ComponentActivity() {
             ),
         )
 
-    private fun supportsPip(): Boolean =
-        packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+    private fun supportsPip(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
 
     companion object {
         private const val ACTION_PIP_REFRESH = "dev.chungjungsoo.truetime.action.PIP_REFRESH"

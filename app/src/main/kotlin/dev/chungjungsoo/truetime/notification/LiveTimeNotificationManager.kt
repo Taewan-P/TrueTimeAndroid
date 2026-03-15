@@ -6,6 +6,7 @@ import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.graphics.drawable.Icon
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -56,6 +57,13 @@ class LiveTimeNotificationManager
                     Intent(context, LiveTimeNotificationDismissReceiver::class.java),
                     PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
                 )
+            val stopIntent =
+                PendingIntent.getBroadcast(
+                    context,
+                    1,
+                    Intent(context, LiveTimeNotificationDismissReceiver::class.java),
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+                )
             val statusTextResId =
                 if (corrected) {
                     R.string.live_time_notification_corrected
@@ -80,6 +88,15 @@ class LiveTimeNotificationManager
                         .setShowWhen(false)
                         .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
                         .setShortCriticalText(chipText)
+                        .addAction(
+                            Notification
+                                .Action
+                                .Builder(
+                                    Icon.createWithResource(context, android.R.drawable.ic_menu_close_clear_cancel),
+                                    context.getString(R.string.live_time_notification_close),
+                                    stopIntent,
+                                ).build(),
+                        )
 
                 requestPromotedOngoing(builder)
                 return builder.build()
@@ -100,7 +117,11 @@ class LiveTimeNotificationManager
                 .setShowWhen(false)
                 .setSilent(true)
                 .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-                .build()
+                .addAction(
+                    android.R.drawable.ic_menu_close_clear_cancel,
+                    context.getString(R.string.live_time_notification_close),
+                    stopIntent,
+                ).build()
         }
 
         private fun ensureChannel() {
