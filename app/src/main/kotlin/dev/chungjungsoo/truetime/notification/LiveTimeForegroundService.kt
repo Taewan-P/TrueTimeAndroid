@@ -7,6 +7,10 @@ import android.os.Build
 import android.os.IBinder
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chungjungsoo.truetime.model.TrustedClockModel
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import javax.inject.Inject
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -15,10 +19,6 @@ import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import javax.inject.Inject
 
 @AndroidEntryPoint
 class LiveTimeForegroundService : Service() {
@@ -38,18 +38,18 @@ class LiveTimeForegroundService : Service() {
         val notification =
             liveTimeNotificationManager.createLiveTimeNotification(
                 corrected = false,
-                chipText = "--:--",
+                chipText = "--:--"
             )
         if (Build.VERSION.SDK_INT >= 29) {
             startForeground(
                 LiveTimeNotificationManager.NOTIFICATION_ID,
                 notification,
-                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC,
+                ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC
             )
         } else {
             startForeground(
                 LiveTimeNotificationManager.NOTIFICATION_ID,
-                notification,
+                notification
             )
         }
         startUpdates()
@@ -58,7 +58,7 @@ class LiveTimeForegroundService : Service() {
     override fun onStartCommand(
         intent: Intent?,
         flags: Int,
-        startId: Int,
+        startId: Int
     ): Int = START_STICKY
 
     override fun onDestroy() {
@@ -80,7 +80,7 @@ class LiveTimeForegroundService : Service() {
                     val adjustedMillis = System.currentTimeMillis() + offsetMillis
                     liveTimeNotificationManager.showLiveTimeNotification(
                         corrected = corrected,
-                        chipText = formatStatusChip(adjustedMillis),
+                        chipText = formatStatusChip(adjustedMillis)
                     )
 
                     val delayMillis = MILLIS_PER_SECOND - (adjustedMillis % MILLIS_PER_SECOND)
@@ -98,8 +98,7 @@ class LiveTimeForegroundService : Service() {
         corrected = snapshot.corrected
     }
 
-    private fun formatStatusChip(epochMillis: Long): String =
-        STATUS_CHIP_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
+    private fun formatStatusChip(epochMillis: Long): String = STATUS_CHIP_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
     companion object {
         private val STATUS_CHIP_FORMATTER = DateTimeFormatter.ofPattern("mm:ss")

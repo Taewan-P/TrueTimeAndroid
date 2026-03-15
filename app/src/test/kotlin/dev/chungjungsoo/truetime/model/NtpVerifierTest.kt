@@ -1,9 +1,9 @@
 package dev.chungjungsoo.truetime.model
 
+import kotlin.math.abs
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
-import kotlin.math.abs
 
 class NtpVerifierTest {
     private val verifier = NtpVerifier()
@@ -15,7 +15,7 @@ class NtpVerifierTest {
                 requestTimeMillis = 1_000L,
                 receiveTimeMillis = 1_120L,
                 transmitTimeMillis = 1_130L,
-                responseTimeMillis = 1_060L,
+                responseTimeMillis = 1_060L
             )
 
         assertEquals(95L, offset)

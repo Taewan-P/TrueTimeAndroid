@@ -7,7 +7,7 @@ import android.content.Intent
 class LiveTimeNotificationDismissReceiver : BroadcastReceiver() {
     override fun onReceive(
         context: Context,
-        intent: Intent,
+        intent: Intent
     ) {
         context.stopService(Intent(context, LiveTimeForegroundService::class.java))
     }

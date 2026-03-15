@@ -16,9 +16,8 @@ import dev.chungjungsoo.truetime.data.TrustedTimeClientAccessor
 object TrustedTimeModule {
     @Provides
     fun provideTrustedTimeClientAccessor(
-        @ApplicationContext context: Context,
-    ): TrustedTimeClientAccessor =
-        object : TrustedTimeClientAccessor {
-            override fun createClient(): Task<TrustedTimeClient> = TrustedTime.createClient(context)
-        }
+        @ApplicationContext context: Context
+    ): TrustedTimeClientAccessor = object : TrustedTimeClientAccessor {
+        override fun createClient(): Task<TrustedTimeClient> = TrustedTime.createClient(context)
+    }
 }

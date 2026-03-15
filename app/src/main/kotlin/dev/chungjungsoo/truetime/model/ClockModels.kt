@@ -2,13 +2,13 @@ package dev.chungjungsoo.truetime.model
 
 data class TrustedSample(
     val trustedEpochMillis: Long,
-    val estimatedErrorMillis: Long,
+    val estimatedErrorMillis: Long
 )
 
 data class VerificationResult(
     val correctedEpochMillis: Long,
     val driftMillis: Long,
-    val usedManualNtpCorrection: Boolean,
+    val usedManualNtpCorrection: Boolean
 )
 
 data class ClockSnapshot(
@@ -16,5 +16,5 @@ data class ClockSnapshot(
     val offsetMillis: Long,
     val estimatedErrorMillis: Long,
     val driftMillis: Long,
-    val corrected: Boolean,
+    val corrected: Boolean
 )

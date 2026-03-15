@@ -17,9 +17,9 @@ import android.os.Bundle
 import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -31,6 +31,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import dev.chungjungsoo.truetime.controller.MainController
 import dev.chungjungsoo.truetime.notification.LiveTimeForegroundService
 import dev.chungjungsoo.truetime.ui.TimeScreen
+import dev.chungjungsoo.truetime.ui.theme.TrueTimeTheme
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -48,7 +49,7 @@ class MainActivity : ComponentActivity() {
         object : BroadcastReceiver() {
             override fun onReceive(
                 context: Context,
-                intent: Intent,
+                intent: Intent
             ) {
                 if (intent.action == ACTION_PIP_REFRESH) {
                     controller.refresh()
@@ -58,12 +59,13 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        enableEdgeToEdge()
         requestNotificationPermissionIfNeeded()
         controller.initialize()
         updatePipParams()
 
         setContent {
-            MaterialTheme {
+            TrueTimeTheme {
                 Surface {
                     val state by controller.uiState.collectAsState()
                     TimeScreen(
@@ -71,7 +73,7 @@ class MainActivity : ComponentActivity() {
                         inPipMode = inPipMode,
                         onRefresh = controller::refresh,
                         onActivateLiveNotification = ::requestNotificationPermissionIfNeeded,
-                        onEnterPip = ::enterClockPipMode,
+                        onEnterPip = ::enterClockPipMode
                     )
                 }
             }
@@ -85,7 +87,7 @@ class MainActivity : ComponentActivity() {
             this,
             pipRefreshReceiver,
             IntentFilter(ACTION_PIP_REFRESH),
-            ContextCompat.RECEIVER_NOT_EXPORTED,
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
     }
 
@@ -97,7 +99,7 @@ class MainActivity : ComponentActivity() {
 
     override fun onPictureInPictureModeChanged(
         isInPictureInPictureMode: Boolean,
-        newConfig: Configuration,
+        newConfig: Configuration
     ) {
         super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
         inPipMode = isInPictureInPictureMode
@@ -112,7 +114,7 @@ class MainActivity : ComponentActivity() {
         val granted =
             ContextCompat.checkSelfPermission(
                 this,
-                Manifest.permission.POST_NOTIFICATIONS,
+                Manifest.permission.POST_NOTIFICATIONS
             ) == PackageManager.PERMISSION_GRANTED
         if (granted) {
             startLiveTimeService()
@@ -124,7 +126,7 @@ class MainActivity : ComponentActivity() {
     private fun startLiveTimeService() {
         startForegroundService(
             this,
-            Intent(this, LiveTimeForegroundService::class.java),
+            Intent(this, LiveTimeForegroundService::class.java)
         )
     }
 
@@ -154,18 +156,17 @@ class MainActivity : ComponentActivity() {
         return builder.build()
     }
 
-    private fun createRefreshAction(): RemoteAction =
-        RemoteAction(
-            Icon.createWithResource(this, android.R.drawable.ic_popup_sync),
-            getString(R.string.pip_refresh),
-            getString(R.string.pip_refresh),
-            PendingIntent.getBroadcast(
-                this,
-                0,
-                Intent(ACTION_PIP_REFRESH).setPackage(packageName),
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-            ),
+    private fun createRefreshAction(): RemoteAction = RemoteAction(
+        Icon.createWithResource(this, android.R.drawable.ic_popup_sync),
+        getString(R.string.pip_refresh),
+        getString(R.string.pip_refresh),
+        PendingIntent.getBroadcast(
+            this,
+            0,
+            Intent(ACTION_PIP_REFRESH).setPackage(packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
+    )
 
     private fun supportsPip(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
 

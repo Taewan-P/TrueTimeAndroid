@@ -17,134 +17,134 @@ import javax.inject.Singleton
 
 @Singleton
 class LiveTimeNotificationManager
-    @Inject
-    constructor(
-        @ApplicationContext private val context: Context,
+@Inject
+constructor(
+    @ApplicationContext private val context: Context
+) {
+    private val manager = context.getSystemService(NotificationManager::class.java)
+
+    fun showLiveTimeNotification(
+        corrected: Boolean,
+        chipText: String
     ) {
-        private val manager = context.getSystemService(NotificationManager::class.java)
-
-        fun showLiveTimeNotification(
-            corrected: Boolean,
-            chipText: String,
-        ) {
-            manager.notify(
-                NOTIFICATION_ID,
-                createLiveTimeNotification(
-                    corrected = corrected,
-                    chipText = chipText,
-                ),
+        manager.notify(
+            NOTIFICATION_ID,
+            createLiveTimeNotification(
+                corrected = corrected,
+                chipText = chipText
             )
-        }
+        )
+    }
 
-        fun createLiveTimeNotification(
-            corrected: Boolean,
-            chipText: String,
-        ): Notification {
-            ensureChannel()
-            val contentIntent =
-                PendingIntent.getActivity(
-                    context,
-                    0,
-                    Intent(context, MainActivity::class.java).apply {
-                        flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                    },
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                )
-            val deleteIntent =
-                PendingIntent.getBroadcast(
-                    context,
-                    0,
-                    Intent(context, LiveTimeNotificationDismissReceiver::class.java),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                )
-            val stopIntent =
-                PendingIntent.getBroadcast(
-                    context,
-                    1,
-                    Intent(context, LiveTimeNotificationDismissReceiver::class.java),
-                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-                )
-            val statusTextResId =
-                if (corrected) {
-                    R.string.live_time_notification_corrected
-                } else {
-                    R.string.live_time_notification_uncorrected
-                }
-
-            if (Build.VERSION.SDK_INT >= 36) {
-                val builder =
-                    Notification
-                        .Builder(context, CHANNEL_ID)
-                        .setSmallIcon(R.mipmap.ic_launcher)
-                        .setContentTitle(context.getString(R.string.live_time_notification_title))
-                        .setContentText(context.getString(R.string.live_time_notification_content))
-                        .setSubText(context.getString(statusTextResId))
-                        .setContentIntent(contentIntent)
-                        .setDeleteIntent(deleteIntent)
-                        .setCategory(Notification.CATEGORY_STATUS)
-                        .setVisibility(Notification.VISIBILITY_PUBLIC)
-                        .setOnlyAlertOnce(true)
-                        .setOngoing(true)
-                        .setShowWhen(false)
-                        .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
-                        .setShortCriticalText(chipText)
-                        .addAction(
-                            Notification
-                                .Action
-                                .Builder(
-                                    Icon.createWithResource(context, android.R.drawable.ic_menu_close_clear_cancel),
-                                    context.getString(R.string.live_time_notification_close),
-                                    stopIntent,
-                                ).build(),
-                        )
-
-                requestPromotedOngoing(builder)
-                return builder.build()
+    fun createLiveTimeNotification(
+        corrected: Boolean,
+        chipText: String
+    ): Notification {
+        ensureChannel()
+        val contentIntent =
+            PendingIntent.getActivity(
+                context,
+                0,
+                Intent(context, MainActivity::class.java).apply {
+                    flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                },
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        val deleteIntent =
+            PendingIntent.getBroadcast(
+                context,
+                0,
+                Intent(context, LiveTimeNotificationDismissReceiver::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        val stopIntent =
+            PendingIntent.getBroadcast(
+                context,
+                1,
+                Intent(context, LiveTimeNotificationDismissReceiver::class.java),
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+        val statusTextResId =
+            if (corrected) {
+                R.string.live_time_notification_corrected
+            } else {
+                R.string.live_time_notification_uncorrected
             }
 
-            return NotificationCompat
-                .Builder(context, CHANNEL_ID)
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle(context.getString(R.string.live_time_notification_title))
-                .setContentText(context.getString(R.string.live_time_notification_content))
-                .setSubText(context.getString(statusTextResId))
-                .setContentIntent(contentIntent)
-                .setDeleteIntent(deleteIntent)
-                .setCategory(NotificationCompat.CATEGORY_STATUS)
-                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-                .setOnlyAlertOnce(true)
-                .setOngoing(true)
-                .setShowWhen(false)
-                .setSilent(true)
-                .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
-                .addAction(
-                    android.R.drawable.ic_menu_close_clear_cancel,
-                    context.getString(R.string.live_time_notification_close),
-                    stopIntent,
-                ).build()
+        if (Build.VERSION.SDK_INT >= 36) {
+            val builder =
+                Notification
+                    .Builder(context, CHANNEL_ID)
+                    .setSmallIcon(R.mipmap.ic_launcher)
+                    .setContentTitle(context.getString(R.string.live_time_notification_title))
+                    .setContentText(context.getString(R.string.live_time_notification_content))
+                    .setSubText(context.getString(statusTextResId))
+                    .setContentIntent(contentIntent)
+                    .setDeleteIntent(deleteIntent)
+                    .setCategory(Notification.CATEGORY_STATUS)
+                    .setVisibility(Notification.VISIBILITY_PUBLIC)
+                    .setOnlyAlertOnce(true)
+                    .setOngoing(true)
+                    .setShowWhen(false)
+                    .setForegroundServiceBehavior(Notification.FOREGROUND_SERVICE_IMMEDIATE)
+                    .setShortCriticalText(chipText)
+                    .addAction(
+                        Notification
+                            .Action
+                            .Builder(
+                                Icon.createWithResource(context, android.R.drawable.ic_menu_close_clear_cancel),
+                                context.getString(R.string.live_time_notification_close),
+                                stopIntent
+                            ).build()
+                    )
+
+            requestPromotedOngoing(builder)
+            return builder.build()
         }
 
-        private fun ensureChannel() {
-            if (manager.getNotificationChannel(CHANNEL_ID) != null) return
-            manager.createNotificationChannel(
-                NotificationChannel(
-                    CHANNEL_ID,
-                    context.getString(R.string.live_time_notification_channel_name),
-                    NotificationManager.IMPORTANCE_LOW,
-                ),
+        return NotificationCompat
+            .Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.mipmap.ic_launcher)
+            .setContentTitle(context.getString(R.string.live_time_notification_title))
+            .setContentText(context.getString(R.string.live_time_notification_content))
+            .setSubText(context.getString(statusTextResId))
+            .setContentIntent(contentIntent)
+            .setDeleteIntent(deleteIntent)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setOnlyAlertOnce(true)
+            .setOngoing(true)
+            .setShowWhen(false)
+            .setSilent(true)
+            .setForegroundServiceBehavior(NotificationCompat.FOREGROUND_SERVICE_IMMEDIATE)
+            .addAction(
+                android.R.drawable.ic_menu_close_clear_cancel,
+                context.getString(R.string.live_time_notification_close),
+                stopIntent
+            ).build()
+    }
+
+    private fun ensureChannel() {
+        if (manager.getNotificationChannel(CHANNEL_ID) != null) return
+        manager.createNotificationChannel(
+            NotificationChannel(
+                CHANNEL_ID,
+                context.getString(R.string.live_time_notification_channel_name),
+                NotificationManager.IMPORTANCE_LOW
             )
-        }
+        )
+    }
 
-        private fun requestPromotedOngoing(builder: Notification.Builder) {
-            runCatching {
-                builder::class.java
-                    .getMethod("setRequestPromotedOngoing", Boolean::class.javaPrimitiveType)
-                    .invoke(builder, true)
-            }
-        }
-
-        companion object {
-            const val CHANNEL_ID = "truetime_live_channel"
-            const val NOTIFICATION_ID = 10_001
+    private fun requestPromotedOngoing(builder: Notification.Builder) {
+        runCatching {
+            builder::class.java
+                .getMethod("setRequestPromotedOngoing", Boolean::class.javaPrimitiveType)
+                .invoke(builder, true)
         }
     }
+
+    companion object {
+        const val CHANNEL_ID = "truetime_live_channel"
+        const val NOTIFICATION_ID = 10_001
+    }
+}
