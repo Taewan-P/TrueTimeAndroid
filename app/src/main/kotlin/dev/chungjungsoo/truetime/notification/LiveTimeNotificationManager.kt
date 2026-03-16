@@ -36,6 +36,12 @@ constructor(
         )
     }
 
+    fun cancelLiveTimeNotification() {
+        manager.cancel(NOTIFICATION_ID)
+    }
+
+    fun isLiveTimeNotificationActive(): Boolean = manager.activeNotifications.any { it.id == NOTIFICATION_ID }
+
     fun createLiveTimeNotification(
         corrected: Boolean,
         chipText: String

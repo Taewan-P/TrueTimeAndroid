@@ -54,6 +54,7 @@ class LiveTimeForegroundService : Service() {
                 notification
             )
         }
+        publishLiveNotificationState(active = true)
         startUpdates()
     }
 
@@ -61,11 +62,17 @@ class LiveTimeForegroundService : Service() {
         intent: Intent?,
         flags: Int,
         startId: Int
-    ): Int = START_STICKY
+    ): Int {
+        publishLiveNotificationState(active = true)
+        return START_STICKY
+    }
 
     override fun onDestroy() {
         updateJob?.cancel()
         serviceScope.cancel()
+        stopForeground(STOP_FOREGROUND_REMOVE)
+        liveTimeNotificationManager.cancelLiveTimeNotification()
+        publishLiveNotificationState(active = false)
         super.onDestroy()
     }
 
@@ -105,7 +112,17 @@ class LiveTimeForegroundService : Service() {
 
     private fun formatStatusChip(epochMillis: Long): String = STATUS_CHIP_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
 
+    private fun publishLiveNotificationState(active: Boolean) {
+        sendBroadcast(
+            Intent(ACTION_LIVE_NOTIFICATION_STATE_CHANGED)
+                .setPackage(packageName)
+                .putExtra(EXTRA_LIVE_NOTIFICATION_ACTIVE, active)
+        )
+    }
+
     companion object {
+        const val ACTION_LIVE_NOTIFICATION_STATE_CHANGED = "dev.chungjungsoo.truetime.action.LIVE_NOTIFICATION_STATE_CHANGED"
+        const val EXTRA_LIVE_NOTIFICATION_ACTIVE = "live_notification_active"
         private val STATUS_CHIP_FORMATTER = DateTimeFormatter.ofPattern("mm:ss")
         private const val MILLIS_PER_SECOND = 1_000L
         private const val MIN_NOTIFICATION_UPDATE_INTERVAL_MS = 50L

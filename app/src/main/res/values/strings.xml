@@ -30,6 +30,7 @@
     <string name="time_offset">Offset: %1$s ms</string>
     <string name="estimated_error">Estimated Error: %1$s ms</string>
     <string name="activate_live_notification">Activate live notification</string>
+    <string name="close_live_notification">Close live notification</string>
     <string name="live_time_notification_title">TrueTime Live</string>
     <string name="live_time_notification_content">Clock pinned to the status chip</string>
     <string name="live_time_notification_close">Close</string>

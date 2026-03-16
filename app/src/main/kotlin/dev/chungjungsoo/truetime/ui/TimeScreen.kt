@@ -51,7 +51,8 @@ fun TimeScreen(
     state: MainController.UiState,
     inPipMode: Boolean,
     onRefresh: () -> Unit,
-    onActivateLiveNotification: () -> Unit,
+    liveNotificationActive: Boolean,
+    onToggleLiveNotification: () -> Unit,
     onEnterPip: () -> Unit
 ) {
     if (inPipMode) {
@@ -113,7 +114,8 @@ fun TimeScreen(
             HeroClockCard(state = state)
             StatusCard(state = state)
             ActionCard(
-                onActivateLiveNotification = onActivateLiveNotification,
+                liveNotificationActive = liveNotificationActive,
+                onToggleLiveNotification = onToggleLiveNotification,
                 onEnterPip = onEnterPip
             )
             Spacer(modifier = Modifier.height(72.dp))
@@ -314,7 +316,8 @@ private fun StatusCard(state: MainController.UiState) {
 
 @Composable
 private fun ActionCard(
-    onActivateLiveNotification: () -> Unit,
+    liveNotificationActive: Boolean,
+    onToggleLiveNotification: () -> Unit,
     onEnterPip: () -> Unit
 ) {
     Card(
@@ -342,11 +345,17 @@ private fun ActionCard(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 FilledTonalButton(
-                    onClick = onActivateLiveNotification,
+                    onClick = onToggleLiveNotification,
                     modifier = Modifier.fillMaxWidth(),
                     contentPadding = PaddingValues(horizontal = 16.dp, vertical = 14.dp)
                 ) {
-                    Text(stringResource(R.string.activate_live_notification))
+                    Text(
+                        if (liveNotificationActive) {
+                            stringResource(R.string.close_live_notification)
+                        } else {
+                            stringResource(R.string.activate_live_notification)
+                        }
+                    )
                 }
                 OutlinedButton(
                     onClick = onEnterPip,

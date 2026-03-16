@@ -30,18 +30,26 @@ import androidx.core.content.ContextCompat.startForegroundService
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chungjungsoo.truetime.controller.MainController
 import dev.chungjungsoo.truetime.notification.LiveTimeForegroundService
+import dev.chungjungsoo.truetime.notification.LiveTimeNotificationManager
 import dev.chungjungsoo.truetime.ui.TimeScreen
 import dev.chungjungsoo.truetime.ui.theme.TrueTimeTheme
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+    @Inject
+    lateinit var liveTimeNotificationManager: LiveTimeNotificationManager
+
     private val controller: MainController by viewModels()
     private var inPipMode by mutableStateOf(false)
+    private var liveNotificationActive by mutableStateOf(false)
 
     private val notificationPermissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
             if (granted) {
                 startLiveTimeService()
+            } else {
+                syncLiveNotificationState()
             }
         }
 
@@ -53,6 +61,22 @@ class MainActivity : ComponentActivity() {
             ) {
                 if (intent.action == ACTION_PIP_REFRESH) {
                     controller.refresh()
+                }
+            }
+        }
+
+    private val liveNotificationStateReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent
+            ) {
+                if (intent.action == LiveTimeForegroundService.ACTION_LIVE_NOTIFICATION_STATE_CHANGED) {
+                    liveNotificationActive =
+                        intent.getBooleanExtra(
+                            LiveTimeForegroundService.EXTRA_LIVE_NOTIFICATION_ACTIVE,
+                            false
+                        )
                 }
             }
         }
@@ -71,7 +95,8 @@ class MainActivity : ComponentActivity() {
                         state = state,
                         inPipMode = inPipMode,
                         onRefresh = controller::refresh,
-                        onActivateLiveNotification = ::requestNotificationPermissionIfNeeded,
+                        liveNotificationActive = liveNotificationActive,
+                        onToggleLiveNotification = ::toggleLiveNotification,
                         onEnterPip = ::enterClockPipMode
                     )
                 }
@@ -88,10 +113,18 @@ class MainActivity : ComponentActivity() {
             IntentFilter(ACTION_PIP_REFRESH),
             ContextCompat.RECEIVER_NOT_EXPORTED
         )
+        ContextCompat.registerReceiver(
+            this,
+            liveNotificationStateReceiver,
+            IntentFilter(LiveTimeForegroundService.ACTION_LIVE_NOTIFICATION_STATE_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        syncLiveNotificationState()
     }
 
     override fun onStop() {
         runCatching { unregisterReceiver(pipRefreshReceiver) }
+        runCatching { unregisterReceiver(liveNotificationStateReceiver) }
         controller.stopTicker()
         super.onStop()
     }
@@ -104,7 +137,19 @@ class MainActivity : ComponentActivity() {
         inPipMode = isInPictureInPictureMode
     }
 
+    private fun toggleLiveNotification() {
+        if (liveNotificationActive) {
+            stopLiveTimeService()
+        } else {
+            requestNotificationPermissionIfNeeded()
+        }
+    }
+
     private fun requestNotificationPermissionIfNeeded() {
+        if (liveNotificationActive || liveTimeNotificationManager.isLiveTimeNotificationActive()) {
+            liveNotificationActive = true
+            return
+        }
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
             startLiveTimeService()
             return
@@ -123,10 +168,24 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun startLiveTimeService() {
+        if (liveNotificationActive || liveTimeNotificationManager.isLiveTimeNotificationActive()) {
+            liveNotificationActive = true
+            return
+        }
         startForegroundService(
             this,
             Intent(this, LiveTimeForegroundService::class.java)
         )
+    }
+
+    private fun stopLiveTimeService() {
+        stopService(Intent(this, LiveTimeForegroundService::class.java))
+        liveTimeNotificationManager.cancelLiveTimeNotification()
+        liveNotificationActive = false
+    }
+
+    private fun syncLiveNotificationState() {
+        liveNotificationActive = liveTimeNotificationManager.isLiveTimeNotificationActive()
     }
 
     private fun enterClockPipMode() {
