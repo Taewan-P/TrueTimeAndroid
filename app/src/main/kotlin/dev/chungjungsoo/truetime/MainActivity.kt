@@ -1,161 +1,234 @@
 package dev.chungjungsoo.truetime
 
+import android.Manifest
+import android.app.PendingIntent
+import android.app.PictureInPictureParams
+import android.app.RemoteAction
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.PackageManager
+import android.content.res.Configuration
+import android.graphics.Rect
+import android.graphics.drawable.Icon
+import android.os.Build
 import android.os.Bundle
-import android.util.Log
+import android.util.Rational
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AppCompatActivity
-import androidx.core.view.ViewCompat
-import androidx.core.view.WindowInsetsCompat
-import androidx.lifecycle.lifecycleScope
-import com.google.android.gms.time.TrustedTimeClient
+import androidx.compose.material3.Surface
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import androidx.core.content.ContextCompat
+import androidx.core.content.ContextCompat.startForegroundService
 import dagger.hilt.android.AndroidEntryPoint
-import dev.chungjungsoo.truetime.data.TrustedTimeClientAccessor
-import dev.chungjungsoo.truetime.databinding.ActivityMainBinding
-import kotlinx.coroutines.delay
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.tasks.await
-import java.time.Instant
-import java.time.LocalDateTime
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
+import dev.chungjungsoo.truetime.controller.MainController
+import dev.chungjungsoo.truetime.notification.LiveTimeForegroundService
+import dev.chungjungsoo.truetime.notification.LiveTimeNotificationManager
+import dev.chungjungsoo.truetime.ui.TimeScreen
+import dev.chungjungsoo.truetime.ui.theme.TrueTimeTheme
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
-
+class MainActivity : ComponentActivity() {
     @Inject
-    lateinit var trustedTimeClientAccessor: TrustedTimeClientAccessor
-    private var trustedTimeClient: TrustedTimeClient? = null
-    private val mainViewModel: MainViewModel by viewModels()
-    private lateinit var binding: ActivityMainBinding
-    private val adjustedTimeStamp: Long
-        get() = System.currentTimeMillis() + mainViewModel.timeOffSet.value - mainViewModel.latestEstimateError.value
+    lateinit var liveTimeNotificationManager: LiveTimeNotificationManager
+
+    private val controller: MainController by viewModels()
+    private var inPipMode by mutableStateOf(false)
+    private var liveNotificationActive by mutableStateOf(false)
+
+    private val notificationPermissionLauncher =
+        registerForActivityResult(ActivityResultContracts.RequestPermission()) { granted ->
+            if (granted) {
+                startLiveTimeService()
+            } else {
+                syncLiveNotificationState()
+            }
+        }
+
+    private val pipRefreshReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent
+            ) {
+                if (intent.action == ACTION_PIP_REFRESH) {
+                    controller.refresh()
+                }
+            }
+        }
+
+    private val liveNotificationStateReceiver =
+        object : BroadcastReceiver() {
+            override fun onReceive(
+                context: Context,
+                intent: Intent
+            ) {
+                if (intent.action == LiveTimeForegroundService.ACTION_LIVE_NOTIFICATION_STATE_CHANGED) {
+                    liveNotificationActive =
+                        intent.getBooleanExtra(
+                            LiveTimeForegroundService.EXTRA_LIVE_NOTIFICATION_ACTIVE,
+                            false
+                        )
+                }
+            }
+        }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        binding = ActivityMainBinding.inflate(layoutInflater)
-        setContentView(binding.root)
-        setWindowInsetListener()
-        initializeTimeClient()
-        observeClientReady()
-        observeTime()
-        observeDetails()
+        controller.initialize()
+        updatePipParams()
 
-        binding.btnRefresh.setOnClickListener { refreshTime() }
-    }
-
-    private fun initializeTimeClient() {
-        lifecycleScope.launch {
-            try {
-                trustedTimeClient = trustedTimeClientAccessor.createClient().await()
-                Log.d("TimeClient", "Initialized time client")
-                mainViewModel.setTimeClientReady()
-            } catch (e: Exception) {
-                Log.e("TimeClient", "Error initializing time client, $e")
-            }
-        }
-    }
-
-    private fun setWindowInsetListener() {
-        ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.main)) { v, insets ->
-            val systemBars = insets.getInsets(WindowInsetsCompat.Type.systemBars())
-            v.setPadding(systemBars.left, systemBars.top, systemBars.right, systemBars.bottom)
-            insets
-        }
-    }
-
-    private fun observeTime() {
-        lifecycleScope.launch {
-            while (true) {
-                val currentTime = LocalDateTime
-                    .ofInstant(
-                        Instant.ofEpochMilli(adjustedTimeStamp),
-                        ZoneId.systemDefault()
+        setContent {
+            TrueTimeTheme {
+                Surface {
+                    val state by controller.uiState.collectAsState()
+                    TimeScreen(
+                        state = state,
+                        inPipMode = inPipMode,
+                        onRefresh = controller::refresh,
+                        liveNotificationActive = liveNotificationActive,
+                        onToggleLiveNotification = ::toggleLiveNotification,
+                        onEnterPip = ::enterClockPipMode
                     )
-                    .format(DateTimeFormatter.ofPattern("yyyy-MM-dd\nHH:mm:ss.SSS"))
-                binding.tvTime.text = currentTime
-                delay(10L)
-            }
-        }
-    }
-
-    private fun observeClientReady() {
-        lifecycleScope.launch {
-            mainViewModel.clientReady.collect { ready ->
-                if (ready) {
-                    refreshTime()
                 }
             }
         }
     }
 
-    private fun observeDetails() {
-        lifecycleScope.launch {
-            mainViewModel.lastUpdatedTime.collect { time ->
-                if (time == null) {
-                    binding.tvLastUpdatedTime.text =
-                        getString(R.string.last_updated_time, getString(R.string.unknown))
-                } else {
-                    val lastUpdatedTime =
-                        LocalDateTime.ofInstant(Instant.ofEpochMilli(time), ZoneId.systemDefault())
-                            .format(
-                                DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")
-                            )
-                    binding.tvLastUpdatedTime.text =
-                        getString(R.string.last_updated_time, lastUpdatedTime)
-                }
-            }
-        }
-
-        lifecycleScope.launch {
-            mainViewModel.timeOffSet.collect { offset ->
-                binding.tvOffset.text = getString(R.string.time_offset, offset.toString())
-            }
-        }
-
-        lifecycleScope.launch {
-            mainViewModel.latestEstimateError.collect { estimatedError ->
-                binding.tvEstimatedError.text =
-                    getString(R.string.estimated_error, estimatedError.toString())
-            }
-        }
-
-    }
-
-    private fun updateTimeOffset(offset: Long?): Boolean {
-        offset?.let {
-            Log.d("TimeOffset", it.toString())
-            mainViewModel.setTimeOffSet(it)
-            return true
-        }
-
-        Log.d("TimeOffset", "Offset is null")
-        return false
-    }
-
-    private fun updateEstimatedError(estimatedError: Long?): Boolean {
-        estimatedError?.let {
-            Log.d("TimeEstimatedError", it.toString())
-            mainViewModel.setLatestEstimateError(it)
-            return true
-        }
-
-        Log.d("TimeEstimatedError", "Estimated error is null")
-        return false
-    }
-
-    private fun refreshTime() {
-        val time = trustedTimeClient!!.latestTimeSignal?.computeCurrentInstant()
-        Log.d(
-            "TimeInMilliSeconds",
-            "Trusted: ${time?.instantMillis}\n System: ${System.currentTimeMillis()}"
+    override fun onStart() {
+        super.onStart()
+        controller.startTicker()
+        ContextCompat.registerReceiver(
+            this,
+            pipRefreshReceiver,
+            IntentFilter(ACTION_PIP_REFRESH),
+            ContextCompat.RECEIVER_NOT_EXPORTED
         )
-        val offsetResult = updateTimeOffset(time?.instantMillis?.minus(System.currentTimeMillis()))
-        val estimatedErrorResult = updateEstimatedError(time?.estimatedErrorMillis)
-        if (offsetResult && estimatedErrorResult) {
-            mainViewModel.setLastUpdatedTime(adjustedTimeStamp)
+        ContextCompat.registerReceiver(
+            this,
+            liveNotificationStateReceiver,
+            IntentFilter(LiveTimeForegroundService.ACTION_LIVE_NOTIFICATION_STATE_CHANGED),
+            ContextCompat.RECEIVER_NOT_EXPORTED
+        )
+        syncLiveNotificationState()
+    }
+
+    override fun onStop() {
+        runCatching { unregisterReceiver(pipRefreshReceiver) }
+        runCatching { unregisterReceiver(liveNotificationStateReceiver) }
+        controller.stopTicker()
+        super.onStop()
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        inPipMode = isInPictureInPictureMode
+    }
+
+    private fun toggleLiveNotification() {
+        if (liveNotificationActive) {
+            stopLiveTimeService()
+        } else {
+            requestNotificationPermissionIfNeeded()
         }
+    }
+
+    private fun requestNotificationPermissionIfNeeded() {
+        if (liveNotificationActive || liveTimeNotificationManager.isLiveTimeNotificationActive()) {
+            liveNotificationActive = true
+            return
+        }
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
+            startLiveTimeService()
+            return
+        }
+
+        val granted =
+            ContextCompat.checkSelfPermission(
+                this,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        if (granted) {
+            startLiveTimeService()
+        } else {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    private fun startLiveTimeService() {
+        if (liveNotificationActive || liveTimeNotificationManager.isLiveTimeNotificationActive()) {
+            liveNotificationActive = true
+            return
+        }
+        startForegroundService(
+            this,
+            Intent(this, LiveTimeForegroundService::class.java)
+        )
+    }
+
+    private fun stopLiveTimeService() {
+        stopService(Intent(this, LiveTimeForegroundService::class.java))
+        liveTimeNotificationManager.cancelLiveTimeNotification()
+        liveNotificationActive = false
+    }
+
+    private fun syncLiveNotificationState() {
+        liveNotificationActive = liveTimeNotificationManager.isLiveTimeNotificationActive()
+    }
+
+    private fun enterClockPipMode() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !supportsPip()) return
+        enterPictureInPictureMode(buildPipParams())
+    }
+
+    private fun updatePipParams() {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O || !supportsPip()) return
+        setPictureInPictureParams(buildPipParams())
+    }
+
+    private fun buildPipParams(): PictureInPictureParams {
+        val rootView = window.decorView
+        val sourceRectHint = Rect(0, 0, rootView.width.coerceAtLeast(1), rootView.height.coerceAtLeast(1))
+        val builder =
+            PictureInPictureParams
+                .Builder()
+                .setAspectRatio(Rational(16, 9))
+                .setSourceRectHint(sourceRectHint)
+                .setActions(listOf(createRefreshAction()))
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            builder.setAutoEnterEnabled(false)
+        }
+        return builder.build()
+    }
+
+    private fun createRefreshAction(): RemoteAction = RemoteAction(
+        Icon.createWithResource(this, android.R.drawable.ic_popup_sync),
+        getString(R.string.pip_refresh),
+        getString(R.string.pip_refresh),
+        PendingIntent.getBroadcast(
+            this,
+            0,
+            Intent(ACTION_PIP_REFRESH).setPackage(packageName),
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    )
+
+    private fun supportsPip(): Boolean = packageManager.hasSystemFeature(PackageManager.FEATURE_PICTURE_IN_PICTURE)
+
+    companion object {
+        private const val ACTION_PIP_REFRESH = "dev.chungjungsoo.truetime.action.PIP_REFRESH"
     }
 }

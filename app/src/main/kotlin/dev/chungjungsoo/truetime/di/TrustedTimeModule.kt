@@ -14,15 +14,10 @@ import dev.chungjungsoo.truetime.data.TrustedTimeClientAccessor
 @Module
 @InstallIn(SingletonComponent::class)
 object TrustedTimeModule {
-
     @Provides
     fun provideTrustedTimeClientAccessor(
         @ApplicationContext context: Context
-    ): TrustedTimeClientAccessor {
-        return object : TrustedTimeClientAccessor {
-            override fun createClient(): Task<TrustedTimeClient> {
-                return TrustedTime.createClient(context)
-            }
-        }
+    ): TrustedTimeClientAccessor = object : TrustedTimeClientAccessor {
+        override fun createClient(): Task<TrustedTimeClient> = TrustedTime.createClient(context)
     }
 }
