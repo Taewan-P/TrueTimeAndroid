@@ -1,6 +1,7 @@
 package dev.chungjungsoo.truetime.model
 
 import kotlin.math.abs
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -31,5 +32,16 @@ class NtpVerifierTest {
         val decodedMillis = verifier.readTimestamp(buffer, 40)
 
         assertTrue(abs(decodedMillis - expectedMillis) <= 1L)
+    }
+
+    @Test
+    fun `detects missing transmit timestamp from raw packet fields`() {
+        val buffer = ByteArray(48)
+
+        assertFalse(verifier.hasTimestamp(buffer, 40))
+
+        verifier.writeTimestamp(buffer, 40, 1_710_000_123_456L)
+
+        assertTrue(verifier.hasTimestamp(buffer, 40))
     }
 }

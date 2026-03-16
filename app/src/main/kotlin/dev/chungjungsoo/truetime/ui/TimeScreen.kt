@@ -171,7 +171,18 @@ private fun HeroClockCard(state: MainController.UiState) {
                 style = MaterialTheme.typography.titleMedium,
                 color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
             )
-            if (!state.clientReady) {
+            if (state.initializationFailed) {
+                Text(
+                    text = stringResource(R.string.trusted_clock_error_title),
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Text(
+                    text = stringResource(R.string.trusted_clock_error_body),
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onPrimaryContainer.copy(alpha = 0.82f)
+                )
+            } else if (!state.clientReady) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(16.dp),

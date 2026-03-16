@@ -15,7 +15,7 @@ constructor() {
         timeoutMs: Int = 2_000
     ): Long? = withContext(Dispatchers.IO) {
         runCatching {
-            val buffer = ByteArray(48)
+            val buffer = ByteArray(NTP_PACKET_SIZE)
             buffer[INDEX_LEAP_VERSION_MODE] = CLIENT_MODE.toByte()
             val address = InetAddress.getByName(host)
             DatagramSocket().use { socket ->
@@ -26,6 +26,7 @@ constructor() {
                 val response = DatagramPacket(buffer, buffer.size)
                 socket.receive(response)
                 val responseTimeMillis = System.currentTimeMillis()
+                require(response.length >= NTP_PACKET_SIZE) { "Invalid NTP packet length: ${response.length}" }
 
                 validateServerReply(buffer)
 
@@ -77,13 +78,17 @@ constructor() {
         val leap = (buffer[INDEX_LEAP_VERSION_MODE].toInt() ushr 6) and 0x3
         val mode = buffer[INDEX_LEAP_VERSION_MODE].toInt() and 0x7
         val stratum = buffer[INDEX_STRATUM].toInt() and 0xff
-        val transmitTimeMillis = readTimestamp(buffer, INDEX_TRANSMIT_TIME)
 
         require(leap != LEAP_NOT_IN_SYNC) { "NTP server is unsynchronized" }
         require(mode == MODE_SERVER || mode == MODE_BROADCAST) { "Unexpected NTP mode: $mode" }
         require(stratum in 1..15) { "Unexpected NTP stratum: $stratum" }
-        require(transmitTimeMillis != 0L) { "Missing NTP transmit timestamp" }
+        require(hasTimestamp(buffer, INDEX_TRANSMIT_TIME)) { "Missing NTP transmit timestamp" }
     }
+
+    internal fun hasTimestamp(
+        buffer: ByteArray,
+        offset: Int
+    ): Boolean = read32(buffer, offset) != 0L || read32(buffer, offset + 4) != 0L
 
     private fun read32(
         buffer: ByteArray,
@@ -114,6 +119,7 @@ constructor() {
         private const val MODE_SERVER = 4
         private const val MODE_BROADCAST = 5
         private const val LEAP_NOT_IN_SYNC = 3
+        private const val NTP_PACKET_SIZE = 48
         private const val MILLIS_PER_SECOND = 1_000L
         private const val NTP_EPOCH_OFFSET_SECONDS = 2_208_988_800L
     }

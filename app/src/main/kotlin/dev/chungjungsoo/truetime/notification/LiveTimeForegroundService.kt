@@ -5,6 +5,7 @@ import android.content.Intent
 import android.content.pm.ServiceInfo
 import android.os.Build
 import android.os.IBinder
+import android.os.SystemClock
 import dagger.hilt.android.AndroidEntryPoint
 import dev.chungjungsoo.truetime.model.TrustedClockModel
 import java.time.Instant
@@ -32,6 +33,7 @@ class LiveTimeForegroundService : Service() {
     private var updateJob: Job? = null
     private var offsetMillis: Long = 0L
     private var corrected: Boolean = false
+    private var lastSnapshotRefreshElapsedRealtime: Long = 0L
 
     override fun onCreate() {
         super.onCreate()
@@ -74,7 +76,7 @@ class LiveTimeForegroundService : Service() {
         updateJob =
             serviceScope.launch {
                 runCatching { trustedClockModel.initialize() }
-                refreshSnapshot()
+                refreshSnapshot(force = true)
 
                 while (isActive) {
                     val adjustedMillis = System.currentTimeMillis() + offsetMillis
@@ -83,19 +85,22 @@ class LiveTimeForegroundService : Service() {
                         chipText = formatStatusChip(adjustedMillis)
                     )
 
+                    refreshSnapshot()
                     val delayMillis = MILLIS_PER_SECOND - (adjustedMillis % MILLIS_PER_SECOND)
-                    if (delayMillis <= SECOND_REFRESH_WINDOW_MS) {
-                        refreshSnapshot()
-                    }
                     delay(delayMillis.coerceAtLeast(MIN_NOTIFICATION_UPDATE_INTERVAL_MS))
                 }
             }
     }
 
-    private suspend fun refreshSnapshot() {
+    private suspend fun refreshSnapshot(force: Boolean = false) {
+        val refreshElapsedRealtime = SystemClock.elapsedRealtime()
+        if (!force && refreshElapsedRealtime - lastSnapshotRefreshElapsedRealtime < SNAPSHOT_REFRESH_INTERVAL_MS) {
+            return
+        }
         val snapshot = trustedClockModel.refreshSnapshot() ?: return
         offsetMillis = snapshot.offsetMillis
         corrected = snapshot.corrected
+        lastSnapshotRefreshElapsedRealtime = refreshElapsedRealtime
     }
 
     private fun formatStatusChip(epochMillis: Long): String = STATUS_CHIP_FORMATTER.format(Instant.ofEpochMilli(epochMillis).atZone(ZoneId.systemDefault()))
@@ -103,7 +108,7 @@ class LiveTimeForegroundService : Service() {
     companion object {
         private val STATUS_CHIP_FORMATTER = DateTimeFormatter.ofPattern("mm:ss")
         private const val MILLIS_PER_SECOND = 1_000L
-        private const val SECOND_REFRESH_WINDOW_MS = 50L
         private const val MIN_NOTIFICATION_UPDATE_INTERVAL_MS = 50L
+        private const val SNAPSHOT_REFRESH_INTERVAL_MS = 60_000L
     }
 }

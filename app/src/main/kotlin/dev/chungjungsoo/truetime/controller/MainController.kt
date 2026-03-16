@@ -33,6 +33,7 @@ constructor(
         val ntpServer: String = NtpVerifier.DEFAULT_HOST,
         val corrected: Boolean = false,
         val clientReady: Boolean = false,
+        val initializationFailed: Boolean = false,
         val secondInMinute: Int = 0,
         val minuteProgress: Float = 0f
     )
@@ -41,19 +42,22 @@ constructor(
     private val liveTimeFormatter = DateTimeFormatter.ofPattern("HH:mm:ss.SSS")
     private var latestSnapshot: ClockSnapshot? = null
     private var tickerJob: Job? = null
-    private var initialized = false
+    private var initializeJob: Job? = null
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState = _uiState.asStateFlow()
 
     fun initialize() {
-        if (initialized) return
-        initialized = true
-        viewModelScope.launch {
+        if (_uiState.value.clientReady || initializeJob?.isActive == true) return
+        initializeJob =
+            viewModelScope.launch {
             runCatching { trustedClockModel.initialize() }
                 .onSuccess {
-                    _uiState.update { it.copy(clientReady = true) }
+                    _uiState.update { it.copy(clientReady = true, initializationFailed = false) }
                     updateSnapshot()
+                }
+                .onFailure {
+                    _uiState.update { it.copy(initializationFailed = true) }
                 }
         }
     }
@@ -92,6 +96,10 @@ constructor(
     }
 
     fun refresh() {
+        if (!_uiState.value.clientReady) {
+            initialize()
+            return
+        }
         viewModelScope.launch { updateSnapshot() }
     }
 

@@ -6,6 +6,8 @@
     <string name="hero_supporting_corrected">Using the corrected clock from the latest NTP snapshot.</string>
     <string name="hero_supporting_uncorrected">Showing TrustedTime while waiting for a corrected NTP reading.</string>
     <string name="preparing_trusted_clock">Preparing the trusted clock…</string>
+    <string name="trusted_clock_error_title">Trusted clock unavailable</string>
+    <string name="trusted_clock_error_body">Initialization failed. Tap refresh to retry the trusted-time setup.</string>
     <string name="second_in_minute">%1$d sec</string>
     <string name="minute_progress">%1$d%% of minute</string>
     <string name="status_card_title">Sync health</string>
@@ -27,7 +29,7 @@
     <string name="unknown">Unknown</string>
     <string name="time_offset">Offset: %1$s ms</string>
     <string name="estimated_error">Estimated Error: %1$s ms</string>
-    <string name="activate_live_notification">Pin live notification</string>
+    <string name="activate_live_notification">Activate live notification</string>
     <string name="live_time_notification_title">TrueTime Live</string>
     <string name="live_time_notification_content">Clock pinned to the status chip</string>
     <string name="live_time_notification_close">Close</string>
