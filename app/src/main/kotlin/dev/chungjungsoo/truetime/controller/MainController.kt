@@ -51,15 +51,15 @@ constructor(
         if (_uiState.value.clientReady || initializeJob?.isActive == true) return
         initializeJob =
             viewModelScope.launch {
-            runCatching { trustedClockModel.initialize() }
-                .onSuccess {
-                    _uiState.update { it.copy(clientReady = true, initializationFailed = false) }
-                    updateSnapshot()
-                }
-                .onFailure {
-                    _uiState.update { it.copy(initializationFailed = true) }
-                }
-        }
+                runCatching { trustedClockModel.initialize() }
+                    .onSuccess {
+                        _uiState.update { it.copy(clientReady = true, initializationFailed = false) }
+                        updateSnapshot()
+                    }
+                    .onFailure {
+                        _uiState.update { it.copy(initializationFailed = true) }
+                    }
+            }
     }
 
     fun startTicker() {

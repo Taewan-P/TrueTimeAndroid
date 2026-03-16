@@ -1,8 +1,8 @@
 package dev.chungjungsoo.truetime.model
 
 import kotlin.math.abs
-import org.junit.Assert.assertFalse
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
